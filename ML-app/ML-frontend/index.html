@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loan Approval Prediction</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      padding: 40px;
+      max-width: 500px;
+      width: 100%;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      text-align: center;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      color: #666;
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      margin-top: 10px;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      color: #667eea;
+      margin-top: 20px;
+      font-weight: 600;
+    }
+
+    .loading.show {
+      display: block;
+    }
+
+    .results {
+      margin-top: 30px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 12px;
+      display: none;
+    }
+
+    .results.show {
+      display: block;
+    }
+
+    .result-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .result-item:last-child {
+      border-bottom: none;
+    }
+
+    .result-label {
+      font-weight: 600;
+      color: #333;
+    }
+
+    .result-value {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .approved {
+      color: #28a745;
+    }
+
+    .rejected {
+      color: #dc3545;
+    }
+
+    .error {
+      margin-top: 20px;
+      padding: 12px;
+      background: #fee;
+      border: 1px solid #fcc;
+      border-radius: 8px;
+      color: #c33;
+      display: none;
+    }
+
+    .error.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🏦 Loan Approval Prediction</h1>
+    <p class="subtitle">Enter your details to predict loan approval status</p>
+
+    <form id="predictionForm" onsubmit="event.preventDefault(); predict();">
+      <div class="form-group">
+        <label for="age">Age</label>
+        <input type="number" id="age" placeholder="Enter your age" min="18" max="100" required>
+      </div>
+
+      <div class="form-group">
+        <label for="income">Annual Income ($)</label>
+        <input type="number" id="income" placeholder="Enter annual income" min="0" step="1000" required>
+      </div>
+
+      <div class="form-group">
+        <label for="credit">Credit Score</label>
+        <input type="number" id="credit" placeholder="Enter credit score" min="300" max="850" required>
+      </div>
+
+      <div class="form-group">
+        <label for="loan">Loan Amount ($)</label>
+        <input type="number" id="loan" placeholder="Enter loan amount" min="0" step="1000" required>
+      </div>
+
+      <button type="submit" id="predictBtn">Predict Loan Approval</button>
+    </form>
+
+    <div class="loading" id="loading">Processing your request...</div>
+
+    <div class="error" id="error"></div>
+
+    <div class="results" id="results">
+      <h3 style="margin-bottom: 15px; color: #333;">Prediction Results:</h3>
+      <div class="result-item">
+        <span class="result-label">Decision Tree Model:</span>
+        <span class="result-value" id="dtResult">-</span>
+      </div>
+      <div class="result-item">
+        <span class="result-label">Logistic Regression Model:</span>
+        <span class="result-value" id="lrResult">-</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "http://127.0.0.1:8000/predict";
+
+    async function predict() {
+      // Get form elements
+      const ageInput = document.getElementById("age");
+      const incomeInput = document.getElementById("income");
+      const creditInput = document.getElementById("credit");
+      const loanInput = document.getElementById("loan");
+      const predictBtn = document.getElementById("predictBtn");
+      const loading = document.getElementById("loading");
+      const results = document.getElementById("results");
+      const error = document.getElementById("error");
+
+      // Validate inputs
+      const age = Number(ageInput.value);
+      const income = Number(incomeInput.value);
+      const credit = Number(creditInput.value);
+      const loan = Number(loanInput.value);
+
+      if (!age || !income || !credit || !loan) {
+        showError("Please fill in all fields with valid numbers.");
+        return;
+      }
+
+      // Hide previous results and errors
+      results.classList.remove("show");
+      error.classList.remove("show");
+
+      // Show loading state
+      loading.classList.add("show");
+      predictBtn.disabled = true;
+
+      try {
+        // Prepare data in the format expected by backend
+        const requestData = {
+          data: [age, income, credit, loan]
+        };
+
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(requestData)
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.detail || `Server error: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        // Display results
+        const dtResult = result.decision_tree === 1 ? "Approved ✅" : "Rejected ❌";
+        const lrResult = result.logistic_regression === 1 ? "Approved ✅" : "Rejected ❌";
+
+        document.getElementById("dtResult").textContent = dtResult;
+        document.getElementById("dtResult").className = `result-value ${result.decision_tree === 1 ? "approved" : "rejected"}`;
+        
+        document.getElementById("lrResult").textContent = lrResult;
+        document.getElementById("lrResult").className = `result-value ${result.logistic_regression === 1 ? "approved" : "rejected"}`;
+
+        results.classList.add("show");
+      } catch (err) {
+        showError(`Error: ${err.message}. Make sure the backend server is running on ${API_URL}`);
+      } finally {
+        loading.classList.remove("show");
+        predictBtn.disabled = false;
+      }
+    }
+
+    function showError(message) {
+      const error = document.getElementById("error");
+      error.textContent = message;
+      error.classList.add("show");
+    }
+  </script>
+</body>
+</html>

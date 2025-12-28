@@ -27,9 +27,9 @@ app.add_middleware(
 # Get the directory where this file is located
 BASE_DIR = Path(__file__).parent
 MODELS_DIR = BASE_DIR / "models"
-# Frontend is in ML-frontend directory, which is at the same level as ML-backend
-FRONTEND_DIR = BASE_DIR.parent.parent / "ML-frontend"
-FRONTEND_HTML = FRONTEND_DIR / "index.html"
+# Frontend is in ML-frontend directory (when root is ML-app)
+# Go up from app/ to ML-backend/ to ML-app/, then into ML-frontend/
+FRONTEND_HTML = BASE_DIR.parent.parent / "ML-frontend" / "index.html"
 
 # Initialize models as None
 dt_model = None

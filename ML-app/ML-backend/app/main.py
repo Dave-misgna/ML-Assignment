@@ -24,6 +24,10 @@ MODELS_DIR = BASE_DIR / "models"
 dt_model = joblib.load(MODELS_DIR / "decision_tree.joblib")
 lr_model = joblib.load(MODELS_DIR / "logistic_regression.joblib")
 
+@app.get("/")
+def root():
+    return {"message": "ML Prediction API is running", "status": "healthy"}
+
 class PredictionRequest(BaseModel):
     data: List[float]
 

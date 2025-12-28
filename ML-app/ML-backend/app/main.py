@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 from typing import List
 import joblib
@@ -26,6 +27,9 @@ app.add_middleware(
 # Get the directory where this file is located
 BASE_DIR = Path(__file__).parent
 MODELS_DIR = BASE_DIR / "models"
+# Frontend is in ML-frontend directory, which is at the same level as ML-backend
+FRONTEND_DIR = BASE_DIR.parent.parent / "ML-frontend"
+FRONTEND_HTML = FRONTEND_DIR / "index.html"
 
 # Initialize models as None
 dt_model = None
@@ -57,13 +61,23 @@ except Exception as e:
     logger.error(f"Error loading models: {str(e)}", exc_info=True)
     sys.exit(1)
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 def root():
-    return {
-        "message": "ML Prediction API is running", 
-        "status": "healthy",
-        "models_loaded": dt_model is not None and lr_model is not None
-    }
+    # Serve the frontend HTML file
+    if FRONTEND_HTML.exists():
+        with open(FRONTEND_HTML, "r", encoding="utf-8") as f:
+            return f.read()
+    else:
+        return f"""
+        <html>
+            <body>
+                <h1>ML Prediction API</h1>
+                <p>Status: healthy</p>
+                <p>Models loaded: {dt_model is not None and lr_model is not None}</p>
+                <p>Frontend file not found at: {FRONTEND_HTML}</p>
+            </body>
+        </html>
+        """
 
 class PredictionRequest(BaseModel):
     data: List[float]

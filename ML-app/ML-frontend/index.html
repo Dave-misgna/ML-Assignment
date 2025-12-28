@@ -215,7 +215,8 @@
   </div>
 
   <script>
-    const API_URL = "http://127.0.0.1:8000/predict";
+    // Use relative URL so it works on Railway
+    const API_URL = "/predict";
 
     async function predict() {
       // Get form elements
@@ -280,7 +281,7 @@
 
         results.classList.add("show");
       } catch (err) {
-        showError(`Error: ${err.message}. Make sure the backend server is running on ${API_URL}`);
+        showError(`Error: ${err.message}`);
       } finally {
         loading.classList.remove("show");
         predictBtn.disabled = false;

@@ -1,4 +1,4 @@
-# End-to-End Machine Learning Application
+# Loan Approval Prediction
 
 This project demonstrates a complete **end-to-end Machine Learning workflow**, 
 starting from data preparation and model training to backend integration and frontend deployment.
